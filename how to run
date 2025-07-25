@@ -1,0 +1,9 @@
+**Install Dependencies**
+npm init -y
+npm install express body-parser
+
+**Run the Server**
+node app.js
+
+**Open in Browser**
+http://localhost:3000

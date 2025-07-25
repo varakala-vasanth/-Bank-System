@@ -10,6 +10,7 @@ const loans = {};
 const transactions = {};
 const uuid = () => Math.random().toString(36).substring(2, 10);
 
+// Home Page with HTML UI
 app.get('/', (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -78,39 +79,31 @@ app.get('/', (req, res) => {
         })
       });
       const data = await res.json();
-      const newTab = window.open();
-      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+      window.open('/ledger/' + data.loanId, '_blank');
     }
 
     async function pay() {
+      const loanId = document.getElementById('loan_id_pay').value;
       const res = await fetch('/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          loanId: document.getElementById('loan_id_pay').value,
+          loanId,
           amount: parseFloat(document.getElementById('pay_amount').value),
           type: document.getElementById('pay_type').value
         })
       });
-      const data = await res.json();
-      const newTab = window.open();
-      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+      window.open('/ledger/' + loanId, '_blank');
     }
 
-    async function ledger() {
+    function ledger() {
       const loanId = document.getElementById('loan_id_ledger').value;
-      const res = await fetch('/ledger/' + loanId);
-      const data = await res.json();
-      const newTab = window.open();
-      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+      window.open('/ledger/' + loanId, '_blank');
     }
 
-    async function overview() {
+    function overview() {
       const customerId = document.getElementById('customer_id_overview').value;
-      const res = await fetch('/overview/' + customerId);
-      const data = await res.json();
-      const newTab = window.open();
-      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+      window.open('/overview/' + customerId, '_blank');
     }
   </script>
 </body>
@@ -118,6 +111,7 @@ app.get('/', (req, res) => {
   `);
 });
 
+// LEND API
 app.post('/lend', (req, res) => {
   const { customerId, amount, period, rate } = req.body;
   const interest = (amount * period * rate) / 100;
@@ -144,6 +138,7 @@ app.post('/lend', (req, res) => {
   res.json({ loanId, totalAmount: total, emi });
 });
 
+// PAYMENT API
 app.post('/payment', (req, res) => {
   const { loanId, amount, type } = req.body;
   if (!loans[loanId]) return res.status(404).json({ error: 'Loan not found' });
@@ -154,6 +149,7 @@ app.post('/payment', (req, res) => {
   res.json({ status: 'Payment recorded', totalPaid: loans[loanId].paid });
 });
 
+// LEDGER API
 app.get('/ledger/:loanId', (req, res) => {
   const loanId = req.params.loanId;
   if (!loans[loanId]) return res.status(404).json({ error: 'Loan not found' });
@@ -162,9 +158,16 @@ app.get('/ledger/:loanId', (req, res) => {
   const balance = loan.total - loan.paid;
   const emiLeft = Math.max(Math.ceil(balance / loan.emi), 0);
 
-  res.json({ loanId, transactions: transactions[loanId], balance, emi: loan.emi, emiLeft });
+  res.json({
+    loanId,
+    transactions: transactions[loanId],
+    balance,
+    emi: loan.emi,
+    emiLeft
+  });
 });
 
+// OVERVIEW API
 app.get('/overview/:customerId', (req, res) => {
   const customerId = req.params.customerId;
   if (!customers[customerId]) return res.status(404).json({ error: 'Customer not found' });
@@ -187,6 +190,7 @@ app.get('/overview/:customerId', (req, res) => {
   res.json(result);
 });
 
+// Start Server
 app.listen(PORT, () => {
   console.log(`✅ Bank system running at http://localhost:${PORT}`);
 });

@@ -11,7 +11,7 @@ const transactions = {};
 const uuid = () => Math.random().toString(36).substring(2, 10);
 
 app.get('/', (req, res) => {
-    res.send(`
+  res.send(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,7 +20,6 @@ app.get('/', (req, res) => {
     body { font-family: Arial; padding: 20px; }
     input, select, button { margin: 5px; padding: 5px; }
     .section { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
-    pre { background-color: #f4f4f4; padding: 10px; }
   </style>
 </head>
 <body>
@@ -35,7 +34,6 @@ app.get('/', (req, res) => {
       <input id="rate" type="number" placeholder="Interest Rate (%)">
       <button type="submit">Submit</button>
     </form>
-    <pre id="lend_result"></pre>
   </div>
 
   <div class="section">
@@ -49,7 +47,6 @@ app.get('/', (req, res) => {
       </select>
       <button type="submit">Pay</button>
     </form>
-    <pre id="pay_result"></pre>
   </div>
 
   <div class="section">
@@ -58,7 +55,6 @@ app.get('/', (req, res) => {
       <input id="loan_id_ledger" placeholder="Loan ID">
       <button type="submit">Check</button>
     </form>
-    <pre id="ledger_result"></pre>
   </div>
 
   <div class="section">
@@ -67,17 +63,9 @@ app.get('/', (req, res) => {
       <input id="customer_id_overview" placeholder="Customer ID">
       <button type="submit">Check</button>
     </form>
-    <pre id="overview_result"></pre>
   </div>
 
   <script>
-    // Prevent Enter key from submitting/reloading page unintentionally
-    window.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && e.target.tagName === "INPUT") {
-        e.preventDefault();
-      }
-    });
-
     async function lend() {
       const res = await fetch('/lend', {
         method: 'POST',
@@ -89,7 +77,9 @@ app.get('/', (req, res) => {
           rate: parseFloat(document.getElementById('rate').value)
         })
       });
-      document.getElementById('lend_result').innerText = JSON.stringify(await res.json(), null, 2);
+      const data = await res.json();
+      const newTab = window.open();
+      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
     }
 
     async function pay() {
@@ -102,27 +92,32 @@ app.get('/', (req, res) => {
           type: document.getElementById('pay_type').value
         })
       });
-      document.getElementById('pay_result').innerText = JSON.stringify(await res.json(), null, 2);
+      const data = await res.json();
+      const newTab = window.open();
+      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
     }
 
     async function ledger() {
       const loanId = document.getElementById('loan_id_ledger').value;
       const res = await fetch('/ledger/' + loanId);
-      document.getElementById('ledger_result').innerText = JSON.stringify(await res.json(), null, 2);
+      const data = await res.json();
+      const newTab = window.open();
+      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
     }
 
     async function overview() {
       const customerId = document.getElementById('customer_id_overview').value;
       const res = await fetch('/overview/' + customerId);
-      document.getElementById('overview_result').innerText = JSON.stringify(await res.json(), null, 2);
+      const data = await res.json();
+      const newTab = window.open();
+      newTab.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
     }
   </script>
 </body>
 </html>
-    `);
+  `);
 });
 
-// LEND
 app.post('/lend', (req, res) => {
   const { customerId, amount, period, rate } = req.body;
   const interest = (amount * period * rate) / 100;
@@ -149,10 +144,8 @@ app.post('/lend', (req, res) => {
   res.json({ loanId, totalAmount: total, emi });
 });
 
-// PAYMENT
 app.post('/payment', (req, res) => {
   const { loanId, amount, type } = req.body;
-
   if (!loans[loanId]) return res.status(404).json({ error: 'Loan not found' });
 
   loans[loanId].paid += amount;
@@ -161,7 +154,6 @@ app.post('/payment', (req, res) => {
   res.json({ status: 'Payment recorded', totalPaid: loans[loanId].paid });
 });
 
-// LEDGER
 app.get('/ledger/:loanId', (req, res) => {
   const loanId = req.params.loanId;
   if (!loans[loanId]) return res.status(404).json({ error: 'Loan not found' });
@@ -173,7 +165,6 @@ app.get('/ledger/:loanId', (req, res) => {
   res.json({ loanId, transactions: transactions[loanId], balance, emi: loan.emi, emiLeft });
 });
 
-// ACCOUNT OVERVIEW
 app.get('/overview/:customerId', (req, res) => {
   const customerId = req.params.customerId;
   if (!customers[customerId]) return res.status(404).json({ error: 'Customer not found' });
